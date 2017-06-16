@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"git.letus.rocks/funsun/peridot/common"
+	"github.com/funsun/peridot/common"
 )
 
 type busMapper struct {

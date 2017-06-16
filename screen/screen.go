@@ -2,11 +2,12 @@ package screen
 
 import (
 	"fmt"
-	"git.letus.rocks/funsun/peridot/controller"
 	"image"
 	"log"
 	"runtime"
 	"strings"
+
+	"github.com/funsun/peridot/controller"
 
 	"github.com/go-gl/gl/v4.5-compatibility/gl"
 	"github.com/go-gl/glfw/v3.1/glfw"

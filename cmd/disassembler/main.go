@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"git.letus.rocks/funsun/peridot/cartridge"
-	"git.letus.rocks/funsun/peridot/ines"
+	"github.com/funsun/peridot/cartridge"
+	"github.com/funsun/peridot/ines"
 )
 
 type Disassembler struct {

@@ -3,7 +3,7 @@ package ppu
 import (
 	"fmt"
 
-	"git.letus.rocks/funsun/peridot/common"
+	"github.com/funsun/peridot/common"
 )
 
 // see https://wiki.nesdev.com/w/index.php/PPU_scrolling#Tile_and_attribute_fetching

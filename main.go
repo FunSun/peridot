@@ -1,13 +1,13 @@
 package main
 
 import (
-	"git.letus.rocks/funsun/peridot/controller"
-	"git.letus.rocks/funsun/peridot/cpu"
-	"git.letus.rocks/funsun/peridot/ines"
-	"git.letus.rocks/funsun/peridot/motherboard"
-	"git.letus.rocks/funsun/peridot/ppu"
-	"git.letus.rocks/funsun/peridot/ram"
-	"git.letus.rocks/funsun/peridot/screen"
+	"github.com/funsun/peridot/controller"
+	"github.com/funsun/peridot/cpu"
+	"github.com/funsun/peridot/ines"
+	"github.com/funsun/peridot/motherboard"
+	"github.com/funsun/peridot/ppu"
+	"github.com/funsun/peridot/ram"
+	"github.com/funsun/peridot/screen"
 )
 
 func main() {

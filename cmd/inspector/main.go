@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
-	"git.letus.rocks/funsun/peridot/cartridge"
-	"git.letus.rocks/funsun/peridot/common"
-	"git.letus.rocks/funsun/peridot/controller"
-	"git.letus.rocks/funsun/peridot/ines"
-	"git.letus.rocks/funsun/peridot/screen"
 	"os"
 	"strconv"
+
+	"github.com/funsun/peridot/cartridge"
+	"github.com/funsun/peridot/common"
+	"github.com/funsun/peridot/controller"
+	"github.com/funsun/peridot/ines"
+	"github.com/funsun/peridot/screen"
 )
 
 var palette = map[uint8]uint8{

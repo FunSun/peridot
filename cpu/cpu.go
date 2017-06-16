@@ -3,7 +3,7 @@ package cpu
 import (
 	"sync"
 
-	"git.letus.rocks/funsun/peridot/common"
+	"github.com/funsun/peridot/common"
 )
 
 type CPU struct {

@@ -3,7 +3,7 @@ package cpu
 import (
 	"testing"
 
-	"git.letus.rocks/funsun/peridot/common"
+	"github.com/funsun/peridot/common"
 )
 
 type testBus struct {

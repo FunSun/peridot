@@ -1,6 +1,6 @@
 package cartridge
 
-import "git.letus.rocks/funsun/peridot/common"
+import "github.com/funsun/peridot/common"
 
 type cpuBus struct {
 	m common.ComplexBus

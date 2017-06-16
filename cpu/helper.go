@@ -2,7 +2,8 @@ package cpu
 
 import (
 	"fmt"
-	"git.letus.rocks/funsun/peridot/common"
+
+	"github.com/funsun/peridot/common"
 )
 
 func makeUint16(h, l uint8) uint16 {

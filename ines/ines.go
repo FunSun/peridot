@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"git.letus.rocks/funsun/peridot/cartridge"
-	"git.letus.rocks/funsun/peridot/common"
+	"github.com/funsun/peridot/cartridge"
+	"github.com/funsun/peridot/common"
 )
 
 func ReadFile(filename string) common.Cartridge {
