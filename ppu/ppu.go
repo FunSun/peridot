@@ -33,29 +33,30 @@ func getATAddr(v uint16) uint16 {
 type PPU struct {
 
 	// internel reg
-	w            uint8
-	skip         uint8
-	v            uint16
-	t            uint16
-	fineX        uint16
-	tfineX       uint16
-	fineXCross   bool
-	shiftRegL    uint16
-	shiftRegH    uint16
-	shiftAttr    uint16
-	bgBase       uint16
-	spriteBase   uint16
-	spriteCache  []uint16
-	paletee      []uint8
-	renderBuffer [256]uint8
-	fb           [][]uint8
-	counter      int
-
-	bus           common.Bus
-	oam           common.Bus
-	oamAddr       uint16
-	width, height int
-	regs          []uint8
+	w              uint8
+	skip           uint8
+	v              uint16
+	t              uint16
+	fineX          uint16
+	tfineX         uint16
+	fineXCross     bool
+	shiftRegL      uint16
+	shiftRegH      uint16
+	shiftAttr      uint16
+	bgBase         uint16
+	spriteBase     uint16
+	spriteCache    []uint16
+	paletee        []uint8
+	renderBuffer   [256]uint8
+	mixFlag        [256]uint8
+	fb             [][]uint8
+	counter        int
+	spriteOverflow bool
+	bus            common.Bus
+	oam            common.Bus
+	oamAddr        uint16
+	width, height  int
+	regs           []uint8
 	//reg
 	fLargeSprite bool
 	fLargeStep   bool
@@ -180,9 +181,9 @@ func (p *PPU) incBaseAddr() {
 // var Echo = true
 
 func (p *PPU) Write(addr uint16, val uint8) {
-	if addr != 4 {
-		fmt.Printf("write ppu 0x%x 0x%x \n", addr, val)
-	}
+	// if addr != 4 {
+	// 	fmt.Printf("write ppu 0x%x 0x%x \n", addr, val)
+	// }
 
 	switch addr {
 	case 0:
@@ -335,7 +336,7 @@ func (p *PPU) preRenderScanline() {
 func (p *PPU) visibleScanline(row int) {
 	// 0
 	p.waitTick()
-	fmt.Println("row:", row)
+	// fmt.Println("row:", row)
 	//bg render
 	var ntByte, atByte, hByte, lByte uint8
 	var tileAddr uint16
@@ -370,6 +371,44 @@ func (p *PPU) visibleScanline(row int) {
 
 	}
 	// sprite evalution
+	var rendered int
+	for i := uint16(0); i < 64; i++ {
+		y := uint16(p.oam.Read(4 * i))
+
+		if row < int(y) || row > int(y+7) {
+			continue
+		}
+		if rendered == 8 {
+			// TODO 什么时候清？
+			p.spriteOverflow = true
+			break
+		}
+		if rendered == 0 {
+			// save time when no sprite in this line
+			for i := 0; i < 256; i++ {
+				p.mixFlag[i] = 8
+			}
+		}
+
+		ntByte := p.oam.Read(4*i + 1)
+		atByte := p.oam.Read(4*i + 2)
+		x := p.oam.Read(4*i + 3)
+		// fmt.Printf("render %d %d\n", y, x)
+		fineY := uint16(row) - y
+		lByte := p.read(p.spriteBase + uint16(ntByte)*16 + fineY)
+		hByte := p.read(p.spriteBase + uint16(ntByte)*16 + fineY + 8)
+		for j := uint8(0); j < 8; j++ {
+			if p.mixFlag[j+x] != 8 {
+				continue
+			}
+			p.mixFlag[j+x] = uint8(i)
+			paletteIndex = 0x4 + (atByte & 0x03)
+			paletteIndex = (paletteIndex << 1) + (hByte&(uint8(0x80)>>(j)))>>(7-j)
+			paletteIndex = (paletteIndex << 1) + (lByte&(uint8(0x80)>>(j)))>>(7-j)
+			p.renderBuffer[j+x] = p.paletee[paletteIndex]
+		}
+		rendered++
+	}
 
 	// 0-256
 	for i := 0; i < 256; i++ {
