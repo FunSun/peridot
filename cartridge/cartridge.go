@@ -55,6 +55,10 @@ func (m *MMC3) GetCHR() []uint8 {
 	return m.chr
 }
 
+func (m *MMC3) GetRPG() []uint8 {
+	return m.rpg
+}
+
 func (m *MMC3) IRQ() {
 	// fmt.Println(m.irqcounter)
 	if m.irqcounter == 0 {

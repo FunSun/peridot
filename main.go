@@ -26,9 +26,12 @@ func main() {
 	s := new(screen.Screen).Init(1000, 800, ctrl)
 	p.SetScreen(s)
 	p.SetBus(mb.PPUBus)
-	vram := new(ram.RAM).Init(8 * 1024)
+	vram1 := new(ram.RAM).Init(8 * 0x0100)
+	vram2 := new(ram.RAM).Init(0x1000)
 	// TODO： 存在mirror的问题
-	mb.PPUBus.AddMapping(0x2000, 0x2000, vram, true)
+	mb.PPUBus.AddMapping(0x2000, 8*0x0100, vram1, true)
+	mb.PPUBus.AddMapping(0x2800, 8*0x0100, vram1, true)
+	mb.PPUBus.AddMapping(0x3000, 0x1000, vram2, true)
 	// d := new(dma.DMA).Init(cpuRAM, oam, 0x0000)
 	// reference https://en.wikibooks.org/wiki/NES_Programming/Memory_Map
 	mb.CPUBus.AddMapping(0x0000, 0x0800, cpuRAM, true)
@@ -52,5 +55,6 @@ func main() {
 	p.SetIRQ(cart.IRQ)
 	cart.SetIRQ(c.IRQ)
 	s.Show()
+	c.Start()
 	mb.Start()
 }
