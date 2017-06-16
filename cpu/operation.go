@@ -189,8 +189,7 @@ func (cpu *CPU) rts() {
 }
 
 func (cpu *CPU) rti() {
-	// fmt.Println("RTI")
-	pc := cpu.pc
+	// pc := cpu.pc
 	cpu.waitTick()
 	cpu.waitTick()
 	cpu.SetP(cpu.pull())
@@ -199,7 +198,7 @@ func (cpu *CPU) rti() {
 	cpu.waitTick()
 	pch := cpu.pull()
 	cpu.pc = makeUint16(pch, pcl)
-	printf("RTI from 0x%x to 0x%x\n", pc, cpu.pc)
+	// fmt.Printf("RTI from 0x%x to 0x%x\n", pc, cpu.pc)
 	// fmt.Printf("0x%x 0x%x\n", cpu.pc, cpu.sp)
 	// for i := cpu.sp; i != 0; i++ {
 	// 	fmt.Printf("val 0x%x sp 0x%x\n", cpu.read(makeUint16(0x01, cpu.sp+i)), cpu.sp+i)
@@ -221,7 +220,6 @@ func (cpu *CPU) bcc() bool {
 
 func (cpu *CPU) beq() bool {
 	printf("BEQ")
-	printf(" X is 0x%x ", cpu.x)
 	return cpu.Z
 }
 
@@ -481,9 +479,11 @@ func (cpu *CPU) irq() {
 	// 	irqCounter++
 	// 	Echo = true
 	// }
-	// Echo = false
+	// common.Echo = false
+	// fmt.Println("IRQ##############################")
+	// println("IRQ")
 	// fmt.Println("IRQ")
-	println("IRQ")
+	// fmt.Printf("0x%x 0x%x\n", cpu.pc, cpu.sp)
 	cpu.fIRQ = false
 	cpu.waitTick()
 	cpu.waitTick()
@@ -502,8 +502,8 @@ func (cpu *CPU) irq() {
 }
 
 func (cpu *CPU) nmi() {
-	Echo = false
-	println("NMI")
+	// common.Echo = true
+	// println("NMI!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 	// fmt.Println("NMI")
 	// fmt.Printf("0x%x 0x%x\n", cpu.pc, cpu.sp)
 	// for i := cpu.sp; i != 0; i++ {

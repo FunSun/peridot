@@ -14,6 +14,7 @@ type CPU struct {
 	// program counter
 	pc uint16
 	// auxilary
+	test     bool
 	opcode   uint8
 	data     uint8
 	buffer   uint8
@@ -24,6 +25,8 @@ type CPU struct {
 	// aux flag
 	fInstruction bool
 	fDMA         bool
+	fStop        bool
+	stopped      chan bool
 	fCross       uint8
 	fY           bool
 	needInit     bool
@@ -51,10 +54,7 @@ func (cpu *CPU) Init() *CPU {
 	cpu.innerTick = make(chan bool)
 	cpu.action = cpu.readIn
 	cpu.stat = map[uint8]int{}
-	go cpu.instruction()
-
-	go cpu.onTick()
-
+	cpu.stopped = make(chan bool)
 	cpu.decoder = map[uint8]func(cpu *CPU){
 		0x00: func(cpu *CPU) { cpu.brk() },
 		0x01: func(cpu *CPU) { cpu.indirectX(); cpu.ora() },
@@ -316,6 +316,11 @@ func (cpu *CPU) Init() *CPU {
 	return cpu
 }
 
+func (cpu *CPU) Start() {
+	go cpu.instruction()
+	go cpu.onTick()
+}
+
 func (cpu *CPU) SetBus(bus common.Bus) {
 	cpu.bus = bus
 }
@@ -326,23 +331,6 @@ func (cpu *CPU) onTick() {
 		if !cpu.fDMA {
 			cpu.innerTick <- true
 		}
-		// <-cpu.Tick
-		// <-cpu.Tick
-		// <-cpu.Tick
-		// <-cpu.Tick
-		// <-cpu.Tick
-		// <-cpu.Tick
-		// <-cpu.Tick
-		// <-cpu.Tick
-		// <-cpu.Tick
-		// <-cpu.Tick
-		// <-cpu.Tick
-		// timeCounter++
-		// accu += t
-		// if timeCounter%1000 == 0 {
-		// 	println(accu / 1000)
-		// 	accu = 0
-		// }
 	}
 }
 
@@ -509,9 +497,7 @@ func (cpu *CPU) instruction() {
 			cpu.waitTick()
 		}
 
-		if Echo {
-			println("new instruction")
-		}
+		println("new instruction")
 		cpu.opcode = cpu.read(cpu.pc)
 		cpu.pc++
 
@@ -527,10 +513,17 @@ func (cpu *CPU) instruction() {
 		printf("0x%x [0x%x]: ", cpu.pc-2, cpu.opcode)
 		next := cpu.decoder[cpu.opcode]
 		next(cpu)
+		if cpu.fStop {
+			cpu.stopped <- true
+			return
+		}
 	}
 }
 
 func (cpu *CPU) waitTick() {
+	if cpu.test == true {
+		return
+	}
 	<-cpu.innerTick
 }
 

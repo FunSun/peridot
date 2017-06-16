@@ -1,14 +1,12 @@
 package cpu
 
-import "fmt"
-
 func (cpu *CPU) future() {
-	println("")
-	fmt.Printf("error opcde is 0x%x, addr is 0x%x\n", cpu.opcode, cpu.pc-2)
-	for k, v := range cpu.stat {
-		printf("opcode 0x%x count %d\n", k, v)
-	}
-	panic("opcode not usable!")
+	// fmt.Printf("error opcde is 0x%x, addr is 0x%x\n", cpu.opcode, cpu.pc-2)
+	// for k, v := range cpu.stat {
+	// 	printf("opcode 0x%x count %d\n", k, v)
+	// }
+	// panic("opcode not usable!")
+	cpu.fStop = true
 }
 
 func (cpu *CPU) implied() {
@@ -28,7 +26,7 @@ func (cpu *CPU) zeropage() {
 }
 
 func (cpu *CPU) zpIndexed() {
-	printf("zpIndexed ")
+	printf("zpIndexed[0x%x] ", cpu.getIndex())
 	cpu.waitTick()
 	cpu.adh = 0x00
 	cpu.adl = cpu.data + cpu.getIndex()
@@ -47,7 +45,7 @@ func (cpu *CPU) absolute() {
 
 // cpu.action和cpu.cross 通过decrator更改
 func (cpu *CPU) absIndexed() {
-	printf("absIndexed: ")
+	printf("absIndexed[0x%x]: ", cpu.getIndex())
 	cpu.adl = cpu.data
 	cpu.waitTick()
 	cpu.adh = cpu.read(cpu.pc)
@@ -64,7 +62,7 @@ func (cpu *CPU) absIndexed() {
 }
 
 func (cpu *CPU) indirectX() {
-	printf("indirectX: ")
+	printf("indirectX[0x%x]: ", cpu.x)
 	bal := cpu.data
 	cpu.waitTick()
 	bal = bal + cpu.x
@@ -78,7 +76,7 @@ func (cpu *CPU) indirectX() {
 }
 
 func (cpu *CPU) indirectY() {
-	printf("indirectY: ")
+	printf("indirectY[0x%x]: ", cpu.y)
 	ial := cpu.data
 	cpu.waitTick()
 	cpu.adl = cpu.read(makeUint16(0x00, ial))
@@ -101,7 +99,6 @@ func (cpu *CPU) relative(checker func() bool) {
 	offset := cpu.data
 	cpu.waitTick()
 	if !checker() {
-		println(" failed")
 		return
 	}
 

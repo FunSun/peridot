@@ -100,9 +100,3 @@ func (mb *MotherBoard) Start() {
 
 	}
 }
-
-// func (mb *MotherBoard) tickAll() {
-// 	for _, ticker := range mb.tickers {
-// 		ticker <- true
-// 	}
-// }
