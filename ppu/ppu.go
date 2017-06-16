@@ -33,22 +33,23 @@ func getATAddr(v uint16) uint16 {
 type PPU struct {
 
 	// internel reg
-	w           uint8
-	skip        uint8
-	v           uint16
-	t           uint16
-	fineX       uint16
-	tfineX      uint16
-	fineXCross  bool
-	shiftRegL   uint16
-	shiftRegH   uint16
-	shiftAttr   uint16
-	bgBase      uint16
-	spriteBase  uint16
-	spriteCache []uint16
-	paletee     []uint8
-	fb          [][]uint8
-	counter     int
+	w            uint8
+	skip         uint8
+	v            uint16
+	t            uint16
+	fineX        uint16
+	tfineX       uint16
+	fineXCross   bool
+	shiftRegL    uint16
+	shiftRegH    uint16
+	shiftAttr    uint16
+	bgBase       uint16
+	spriteBase   uint16
+	spriteCache  []uint16
+	paletee      []uint8
+	renderBuffer [256]uint8
+	fb           [][]uint8
+	counter      int
 
 	bus           common.Bus
 	oam           common.Bus
@@ -254,9 +255,6 @@ func (p *PPU) Write(addr uint16, val uint8) {
 	p.regs[p.addr] = val
 }
 
-var foo = false
-
-var pre int64
 var count int64
 
 func (p *PPU) render() {
@@ -300,34 +298,6 @@ func (p *PPU) loadPalette() {
 	}
 }
 
-func (p *PPU) renderPixel() {
-	var paletteIndex uint8
-	var attr uint8
-	var hByte, lByte uint8
-	if p.fineXCross {
-		attr = uint8(p.shiftAttr & 0x00ff)
-		hByte = uint8(p.shiftRegH & 0x00ff)
-		lByte = uint8(p.shiftRegL & 0x00ff)
-	} else {
-		attr = uint8(p.shiftAttr >> 8)
-		hByte = uint8(p.shiftRegH >> 8)
-		lByte = uint8(p.shiftRegL >> 8)
-	}
-
-	paletteIndex = attr
-	paletteIndex = (paletteIndex << 1) + (hByte&(uint8(0x80)>>p.fineX))>>(7-p.fineX)
-	paletteIndex = (paletteIndex << 1) + (lByte&(uint8(0x80)>>p.fineX))>>(7-p.fineX)
-	p.fb[p.counter>>8][p.counter&0x00ff] = p.paletee[paletteIndex]
-
-	if p.fineX == 7 {
-		p.fineXCross = true
-		p.fineX = 0
-	} else {
-		p.fineX++
-	}
-	p.counter = (p.counter + 1) % (256 * 240)
-}
-
 func (p *PPU) preRenderScanline() {
 	// 0
 	if p.skip > 0 {
@@ -346,12 +316,13 @@ func (p *PPU) preRenderScanline() {
 	// 258-320
 	p.tryIRQ() // trim glitch in middle of screen
 	p.tryIRQ()
-	p.spriteEvalution()
+	for i := 0; i < 321; i++ {
+		p.waitTick()
+	}
 	p.v = p.t
 
 	// 321 - 336
 	p.loadPalette()
-	p.reloadShiftReg()
 
 	// 337 - 340
 	p.waitTick()
@@ -365,30 +336,55 @@ func (p *PPU) visibleScanline(row int) {
 	// 0
 	p.waitTick()
 	fmt.Println("row:", row)
-	x := (p.v & 0x0400) >> 10
-	x = (x << 5) + (p.v & 0x001f)
+	//bg render
+	var ntByte, atByte, hByte, lByte uint8
+	var tileAddr uint16
+	var coarseX, coarseY, fineY uint16
+	var offset uint16
+	var paletteIndex, attr uint8
+	var n uint16
+	coarseY = (p.v & uint16(0x03E0)) >> 5
+	fineY = p.v >> 12
 
-	// fmt.Printf("x %d ", x)
-	y := (p.v & 0x0800) >> 11
-	y = (y << 5) + ((p.v >> 5) & 0x001f)
-	// fmt.Println("y", y)
+	for i := uint16(0); i < 256+p.fineX; i++ {
+		if i%8 == 0 {
+			coarseX = p.v & uint16(0x001f)
+			ntByte = p.read(getNTAddr(p.v))
+			atByte = p.read(getATAddr(p.v))
+			tileAddr = p.bgBase + uint16(ntByte)*16 + fineY
 
-	// 1-257
-	p.renderBg()
+			lByte = p.read(tileAddr)
+			hByte = p.read(tileAddr + 8)
+			offset = (coarseY & 0x02) + ((coarseX & 0x02) >> 1)
+			attr = (atByte & (0x03 << (offset * 2))) >> (offset * 2)
+			p.incX()
+		}
+		if i < p.fineX {
+			continue
+		}
+		n = i % 8
+		paletteIndex = attr
+		paletteIndex = (paletteIndex << 1) + (hByte&(uint8(0x80)>>(n)))>>(7-n)
+		paletteIndex = (paletteIndex << 1) + (lByte&(uint8(0x80)>>(n)))>>(7-n)
+		p.renderBuffer[i-p.fineX] = p.paletee[paletteIndex]
+
+	}
+	// sprite evalution
+
+	// 0-256
+	for i := 0; i < 256; i++ {
+		p.waitTick()
+		p.fb[row][i] = p.renderBuffer[i]
+	}
+
 	p.waitTick()
 	p.incY()
 	p.txTovx()
 	// 258 - 320
 	p.tryIRQ()
-	p.spriteEvalution()
-	// 321 - 336
-	p.reloadShiftReg()
-
-	// 337 - 340
-	p.waitTick()
-	p.waitTick()
-	p.waitTick()
-	p.waitTick()
+	for i := 258; i < 341; i++ {
+		p.waitTick()
+	}
 }
 
 func (p *PPU) postRenderScanline(row int) {
@@ -406,103 +402,10 @@ func (p *PPU) postRenderScanline(row int) {
 	}
 }
 
-func (p *PPU) renderBg() {
-	var ntByte, atByte, lowBG, highBG uint8
-	var tileAddr uint16
-	var coarseX, coarseY, fineY uint16
-	var attr uint16
-	var offset uint16
-	coarseY = (p.v & uint16(0x03E0)) >> 5
-	fineY = p.v >> 12
-	// fmt.Printf("0x%x\n", getATAddr(p.v))
-
-	for i := 0; i < 32; i++ {
-		// fetch +2 tile from this line
-		coarseX = p.v & uint16(0x001f)
-		p.waitTick()
-		ntByte = p.read(getNTAddr(p.v))
-		tileAddr = p.bgBase + uint16(ntByte)*16 + fineY
-		p.renderPixel()
-		p.waitTick()
-		p.renderPixel()
-
-		p.waitTick()
-		atByte = p.read(getATAddr(p.v))
-		p.renderPixel()
-		p.waitTick()
-		p.renderPixel()
-
-		p.waitTick()
-		lowBG = p.read(tileAddr)
-		p.renderPixel()
-		p.waitTick()
-		p.renderPixel()
-
-		p.waitTick()
-		highBG = p.read(tileAddr + 8)
-		p.renderPixel()
-		p.waitTick()
-		p.renderPixel()
-
-		p.shiftRegL = (p.shiftRegL << 8) + uint16(lowBG)
-		p.shiftRegH = (p.shiftRegH << 8) + uint16(highBG)
-		offset = (coarseY & 0x02) + ((coarseX & 0x02) >> 1)
-		attr = uint16(atByte&(0x03<<(offset*2))) >> (offset * 2)
-		p.shiftAttr = (p.shiftAttr << 8) + attr
-		p.incX()
-	}
-}
-
 func (p *PPU) tryIRQ() {
 	if p.bgBase == 0x0000 && p.spriteBase == 0x1000 && p.fRender {
 		p.irq()
 	}
-}
-
-func (p *PPU) spriteEvalution() {
-	for i := 258; i < 321; i++ {
-		p.waitTick()
-	}
-
-}
-
-func (p *PPU) reloadShiftReg() {
-	var ntByte, atByte, lowBG, highBG uint8
-	var tileAddr uint16
-	var coarseX, coarseY, fineY uint16
-	var attr uint16
-	var offset uint16
-	coarseY = (p.v & uint16(0x03E0)) >> 5
-	fineY = p.v >> 12
-	p.waitTick()
-	for i := 0; i < 2; i++ {
-		// fetch +2 tile from this line
-		coarseX = p.v & uint16(0x001f)
-		p.waitTick()
-		ntByte = p.read(getNTAddr(p.v))
-		tileAddr = p.bgBase + uint16(ntByte)*16 + fineY
-		p.waitTick()
-
-		p.waitTick()
-		atByte = p.read(getATAddr(p.v))
-		p.waitTick()
-
-		p.waitTick()
-		lowBG = p.read(tileAddr)
-		p.waitTick()
-
-		p.waitTick()
-		highBG = p.read(tileAddr + 8)
-		p.waitTick()
-
-		p.shiftRegL = (p.shiftRegL << 8) + uint16(lowBG)
-		p.shiftRegH = (p.shiftRegH << 8) + uint16(highBG)
-		offset = (coarseY & 0x02) + ((coarseX & 0x02) >> 1)
-		attr = uint16(atByte&(0x03<<(offset*2))) >> (offset * 2)
-		p.shiftAttr = (p.shiftAttr << 8) + attr
-		p.incX()
-	}
-
 }
 
 func (p *PPU) SetScreen(s common.Screen) {
