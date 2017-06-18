@@ -79,7 +79,12 @@ func (mb *MotherBoard) Start() {
 	var accu int64
 	var timeCounter int64
 	for {
-		<-ch
+		select {
+		case <-common.Terminate:
+			return
+		case <-ch:
+		}
+
 		s := time.Now().UnixNano()
 		for i := 0; i < 20040; i++ {
 			if i%12 == 0 {

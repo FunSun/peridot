@@ -260,7 +260,7 @@ var count int64
 
 func (p *PPU) render() {
 	for {
-		fmt.Println("Frame: ", count)
+		// fmt.Println("Frame: ", count)
 		// if count == 120 {
 		// 	fmt.Println("kill")
 		// 	return

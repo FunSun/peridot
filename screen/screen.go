@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/funsun/peridot/common"
 	"github.com/funsun/peridot/controller"
 
 	"github.com/go-gl/gl/v4.5-compatibility/gl"
@@ -107,11 +108,13 @@ type Screen struct {
 	img    image.Image
 	ctrl   *controller.Controller
 	vao    *VAO
+	Done   chan bool
 }
 
 func (s *Screen) Init(w, h int, c *controller.Controller) *Screen {
 	s.w, s.h = w, h
 	s.ctrl = c
+	s.Done = make(chan bool)
 	return s
 }
 
@@ -127,7 +130,7 @@ func (s *Screen) Show() {
 		for !s.handle.ShouldClose() {
 			s.onUpdate()
 		}
-
+		common.Terminate <- true
 	}()
 }
 

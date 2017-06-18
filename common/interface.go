@@ -41,3 +41,5 @@ func Hex(a int) string {
 }
 
 var Echo = false
+
+var Terminate = make(chan bool)

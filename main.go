@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/funsun/peridot/controller"
 	"github.com/funsun/peridot/cpu"
 	"github.com/funsun/peridot/ines"
@@ -11,7 +13,11 @@ import (
 )
 
 func main() {
-
+	if len(os.Args) == 1 {
+		panic("TODO")
+	}
+	target := os.Args[1]
+	cart := ines.ReadFile(target)
 	mb := new(motherboard.MotherBoard).Init()
 	c := new(cpu.CPU).Init()
 	c.SetBus(mb.CPUBus)
@@ -23,7 +29,7 @@ func main() {
 	oam := new(ram.RAM).Init(1024)
 	p.SetOAM(oam)
 	ctrl := new(controller.Controller).Init()
-	s := new(screen.Screen).Init(1000, 800, ctrl)
+	s := new(screen.Screen).Init(640, 480, ctrl)
 	p.SetScreen(s)
 	p.SetBus(mb.PPUBus)
 	vram1 := new(ram.RAM).Init(8 * 0x0100)
@@ -49,7 +55,7 @@ func main() {
 	p.SetNMI(c.NMI)
 	// c.AddRising(p.OnRising)
 	// c.AddFalling(p.OnFalling)
-	cart := ines.ReadFile("./test.nes")
+
 	cart.SetCPURouter(mb.CPUBus)
 	cart.SetPPURouter(mb.PPUBus)
 	p.SetIRQ(cart.IRQ)
