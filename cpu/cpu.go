@@ -33,7 +33,6 @@ type CPU struct {
 	fIRQ         bool
 	fNMI         bool
 	Tick         chan bool
-	innerTick    chan bool
 	skip1        bool
 	rw           sync.Mutex
 
@@ -51,7 +50,6 @@ func (cpu *CPU) Init() *CPU {
 	// cpu.rising = []func(){}
 	// cpu.falling = []func(){}
 	cpu.Tick = make(chan bool, 10)
-	cpu.innerTick = make(chan bool)
 	cpu.action = cpu.readIn
 	cpu.stat = map[uint8]int{}
 	cpu.stopped = make(chan bool)
@@ -318,20 +316,10 @@ func (cpu *CPU) Init() *CPU {
 
 func (cpu *CPU) Start() {
 	go cpu.instruction()
-	go cpu.onTick()
 }
 
 func (cpu *CPU) SetBus(bus common.Bus) {
 	cpu.bus = bus
-}
-
-func (cpu *CPU) onTick() {
-	for {
-		<-cpu.Tick
-		if !cpu.fDMA {
-			cpu.innerTick <- true
-		}
-	}
 }
 
 var KEY = false
@@ -524,7 +512,12 @@ func (cpu *CPU) waitTick() {
 	if cpu.test == true {
 		return
 	}
-	<-cpu.innerTick
+	for {
+		<-cpu.Tick
+		if !cpu.fDMA {
+			return
+		}
+	}
 }
 
 func (cpu *CPU) addr() uint16 {
